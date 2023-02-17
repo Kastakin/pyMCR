@@ -138,13 +138,22 @@ class McrAR:
 
     """
 
-    def __init__(self, c_regr=OLS(), st_regr=OLS(), fit_kwargs={},
-                 c_fit_kwargs={}, st_fit_kwargs={}, c_constraints=[ConstraintNonneg()],
-                 st_constraints=[ConstraintNonneg()],
-                 max_iter=50, err_fcn=mse,
-                 tol_increase=0.0, tol_n_increase=10, tol_err_change=None,
-                 tol_n_above_min=10
-                 ):
+    def __init__(
+        self,
+        c_regr=OLS(),
+        st_regr=OLS(),
+        fit_kwargs={},
+        c_fit_kwargs={},
+        st_fit_kwargs={},
+        c_constraints=[ConstraintNonneg()],
+        st_constraints=[ConstraintNonneg()],
+        max_iter=50,
+        err_fcn=mse,
+        tol_increase=0.0,
+        tol_n_increase=10,
+        tol_err_change=None,
+        tol_n_above_min=10,
+    ):
         """
         Multivariate Curve Resolution - Alternating Regression
         """
@@ -195,36 +204,37 @@ class McrAR:
 
     def _check_regr(self, mth):
         """
-            Check regressor method. If acceptable strings, instantiate and
-            return object. If instantiated class, make sure it has a fit
-            attribute.
+        Check regressor method. If acceptable strings, instantiate and
+        return object. If instantiated class, make sure it has a fit
+        attribute.
         """
         if isinstance(mth, str):
-            if mth.upper() == 'OLS':
+            if mth.upper() == "OLS":
                 return OLS()
-            elif mth.upper() == 'NNLS':
+            elif mth.upper() == "NNLS":
                 return NNLS()
             else:
-                raise ValueError('{} is unknown. Use NNLS or OLS.'.format(mth))
-        elif hasattr(mth, 'fit'):
+                raise ValueError("{} is unknown. Use NNLS or OLS.".format(mth))
+        elif hasattr(mth, "fit"):
             return mth
         else:
-            raise ValueError('Input class '
-                             '{} does not have a \'fit\' method'.format(mth))
+            raise ValueError(
+                "Input class " "{} does not have a 'fit' method".format(mth)
+            )
 
     @property
     def D_(self):
-        """ D matrix with current C and S^T matrices """
+        """D matrix with current C and S^T matrices"""
         return _np.dot(self.C_, self.ST_)
 
     @property
     def D_opt_(self):
-        """ D matrix with optimal C and S^T matrices """
+        """D matrix with optimal C and S^T matrices"""
         return _np.dot(self.C_opt_, self.ST_opt_)
 
     @property
     def n_features(self):
-        """ Number of features """
+        """Number of features"""
         if self.ST_ is not None:
             return self.ST_.shape[-1]
         else:
@@ -232,7 +242,7 @@ class McrAR:
 
     @property
     def n_targets(self):
-        """ Number of targets """
+        """Number of targets"""
         if self.C_ is not None:
             return self.C_.shape[1]
         else:
@@ -240,21 +250,31 @@ class McrAR:
 
     @property
     def n_samples(self):
-        """ Number of samples """
+        """Number of samples"""
         if self.C_ is not None:
             return self.C_.shape[0]
         else:
             return None
 
     def _ismin_err(self, val):
-        """ Is the current error the minimum """
+        """Is the current error the minimum"""
         if len(self.err) == 0:
             return True
         else:
-            return ([val > x for x in self.err].count(True) == 0)
+            return [val > x for x in self.err].count(True) == 0
 
-    def fit(self, D, C=None, ST=None, st_fix=None, c_fix=None, c_first=True,
-            verbose=False, post_iter_fcn=None, post_half_fcn=None):
+    def fit(
+        self,
+        D,
+        C=None,
+        ST=None,
+        st_fix=None,
+        c_fix=None,
+        c_first=True,
+        verbose=False,
+        post_iter_fcn=None,
+        post_half_fcn=None,
+    ):
         """
         Perform MCR-AR. D = CS^T. Solve for C and S^T iteratively.
 
@@ -312,27 +332,27 @@ class McrAR:
             _logger.setLevel(_logging.INFO)
 
         if self.fit_kwargs:
-            temp = self.fit_kwargs.get('C')
+            temp = self.fit_kwargs.get("C")
             if (temp is not None) & (C is None):
                 C = temp
 
-            temp = self.fit_kwargs.get('ST')
+            temp = self.fit_kwargs.get("ST")
             if (temp is not None) & (ST is None):
                 ST = temp
 
-            temp = self.fit_kwargs.get('st_fix')
+            temp = self.fit_kwargs.get("st_fix")
             if (temp is not None) & (st_fix is None):
                 st_fix = temp
 
-            temp = self.fit_kwargs.get('c_fix')
+            temp = self.fit_kwargs.get("c_fix")
             if (temp is not None) & (c_fix is None):
                 c_fix = temp
 
-            temp = self.fit_kwargs.get('post_iter_fcn')
+            temp = self.fit_kwargs.get("post_iter_fcn")
             if (temp is not None) & (post_iter_fcn is None):
                 post_iter_fcn = temp
 
-            temp = self.fit_kwargs.get('post_half_fcn')
+            temp = self.fit_kwargs.get("post_half_fcn")
             if (temp is not None) & (post_iter_fcn is None):
                 post_half_fcn = temp
 
@@ -450,7 +470,6 @@ class McrAR:
                     post_half_fcn(self.C_, self.ST_, D, D_calc)
 
             if self.C_ is not None:
-
                 # Debugging feature -- saves every C matrix in a list
                 # Can create huge memory usage
                 if self._saveall_c:
@@ -579,15 +598,16 @@ class McrAR:
 
     @property
     def components_(self):
-        """ This is just provided for sklearn-like functionality """
+        """This is just provided for sklearn-like functionality"""
 
         return self.ST_
 
-if __name__ == '__main__':  # pragma: no cover
+
+if __name__ == "__main__":  # pragma: no cover
     # PyMCR uses the Logging facility to capture messaging
     # Sends logging messages to stdout (prints them)
     stdout_handler = _logging.StreamHandler(stream=_sys.stdout)
-    stdout_format = _logging.Formatter('%(message)s')
+    stdout_format = _logging.Formatter("%(message)s")
     stdout_handler.setFormatter(stdout_format)
     _logger.addHandler(stdout_handler)
 

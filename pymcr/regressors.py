@@ -7,22 +7,24 @@ NOTE: coef_ will be X.T, which is the formalism that scikit-learn follows
 
 """
 
-from abc import (ABC as _ABC, abstractmethod as _abstractmethod)
+from abc import ABC as _ABC, abstractmethod as _abstractmethod
 
 import numpy as _np
 
 from scipy.linalg import lstsq as _lstsq
 from scipy.optimize import nnls as _nnls
 
+
 class LinearRegression(_ABC):
-    """ Abstract class for linear regression methods """
+    """Abstract class for linear regression methods"""
+
     def __init__(self):
         self.X_ = None
         self.residual_ = None
 
     @property
     def coef_(self):
-        """ The transposed form of X. This is the formalism of scikit-learn """
+        """The transposed form of X. This is the formalism of scikit-learn"""
         if self.X_ is None:
             return None
         else:
@@ -30,7 +32,8 @@ class LinearRegression(_ABC):
 
     @_abstractmethod
     def fit(self, A, B):
-        """ AX = B, solve for X """
+        """AX = B, solve for X"""
+
 
 class OLS(LinearRegression):
     """
@@ -60,14 +63,16 @@ class OLS(LinearRegression):
     coef_ is X.T, which is the formalism of scikit-learn
 
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.rank_ = None
         self.svs_ = None
 
     def fit(self, A, B):
-        """ Solve for X: AX = B"""
+        """Solve for X: AX = B"""
         self.X_, self.residual_, self.rank_, self.svs_ = _lstsq(A, B)
+
 
 class NNLS(LinearRegression):
     """
@@ -90,11 +95,12 @@ class NNLS(LinearRegression):
 
     coef_ is X.T, which is the formalism of scikit-learn
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__()
 
     def fit(self, A, B):
-        """ Solve for X: AX = B"""
+        """Solve for X: AX = B"""
 
         if B.ndim == 2:
             N = B.shape[-1]

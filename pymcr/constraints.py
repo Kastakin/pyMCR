@@ -5,20 +5,30 @@ All classes need a transform class. Note, unlike sklearn, transform can copy
 or overwrite input depending on copy attribute.
 """
 
-from abc import (ABC as _ABC, abstractmethod as _abstractmethod)
+from abc import ABC as _ABC, abstractmethod as _abstractmethod
+from typing import List, Union
 
 import numpy as _np
 
-__all__ = ['Constraint', 'ConstraintNonneg', 'ConstraintCumsumNonneg',
-           'ConstraintZeroEndPoints', 'ConstraintZeroCumSumEndPoints',
-           'ConstraintNorm', 'ConstraintCutBelow', 'ConstraintCutAbove',
-           'ConstraintCompressBelow', 'ConstraintCutAbove',
-           'ConstraintCompressAbove', 'ConstraintReplaceZeros',
-           'ConstraintPlanarize']
+__all__ = [
+    "Constraint",
+    "ConstraintNonneg",
+    "ConstraintCumsumNonneg",
+    "ConstraintZeroEndPoints",
+    "ConstraintZeroCumSumEndPoints",
+    "ConstraintNorm",
+    "ConstraintCutBelow",
+    "ConstraintCutAbove",
+    "ConstraintCompressBelow",
+    "ConstraintCutAbove",
+    "ConstraintCompressAbove",
+    "ConstraintReplaceZeros",
+    "ConstraintPlanarize",
+]
 
 
 class Constraint(_ABC):
-    """ Abstract class for constraints
+    """Abstract class for constraints
 
     Parameters
     ----------
@@ -31,7 +41,7 @@ class Constraint(_ABC):
 
     @_abstractmethod
     def transform(self, A):
-        """ Transform A input based on constraint """
+        """Transform A input based on constraint"""
 
 
 class ConstraintNonneg(Constraint):
@@ -43,17 +53,19 @@ class ConstraintNonneg(Constraint):
     copy : bool
         Make copy of input data, A; otherwise, overwrite (if mutable)
     """
+
     def __init__(self, copy=False):
-        """ A must be non-negative"""
+        """A must be non-negative"""
         super().__init__(copy)
 
     def transform(self, A):
-        """ Apply nonnegative constraint"""
+        """Apply nonnegative constraint"""
         if self.copy:
-            return A*(A > 0)
+            return A * (A > 0)
         else:
-            A *= (A > 0)
+            A *= A > 0
             return A
+
 
 class ConstraintCumsumNonneg(Constraint):
     """
@@ -65,18 +77,19 @@ class ConstraintCumsumNonneg(Constraint):
     copy : bool
         Make copy of input data, A; otherwise, overwrite (if mutable)
     """
+
     def __init__(self, axis=-1, copy=False):
-        """ A must be non-negative"""
+        """A must be non-negative"""
         super().__init__(copy)
         self.axis = axis
 
     def transform(self, A):
-        """ Apply cumsum nonnegative constraint"""
+        """Apply cumsum nonnegative constraint"""
 
         if self.copy:
-            return A*(_np.cumsum(A, self.axis) > 0)
+            return A * (_np.cumsum(A, self.axis) > 0)
         else:
-            A *= (_np.cumsum(A, self.axis) > 0)
+            A *= _np.cumsum(A, self.axis) > 0
             return A
 
 
@@ -95,58 +108,60 @@ class ConstraintZeroEndPoints(Constraint):
     span : int
         Number of pixels along the ends to average.
     """
+
     def __init__(self, axis=-1, span=1, copy=False):
-        """ A must be non-negative"""
+        """A must be non-negative"""
         super().__init__(copy)
         if [0, 1, -1].count(axis) != 1:
-            raise TypeError('Axis must be 0, 1, or -1')
+            raise TypeError("Axis must be 0, 1, or -1")
 
         self.axis = axis
         self.span = span
 
     def transform(self, A):
-        """ Apply cumsum nonnegative constraint"""
+        """Apply cumsum nonnegative constraint"""
 
         pix_vec = _np.arange(A.shape[self.axis])
-        if (self.axis == 0):
+        if self.axis == 0:
             if self.span == 1:
                 slope = (A[-1, :] - A[0, :]) / (pix_vec[-1] - pix_vec[0])
                 intercept = A[0, :]
             else:
-                slope = ((A[-self.span:, :].mean(axis=0) -
-                        A[:self.span, :].mean(axis=0)) /
-                        (pix_vec[-self.span:].mean() -
-                        pix_vec[:self.span].mean()))
-                intercept = (A[:self.span, :] -
-                            _np.dot(pix_vec[:self.span, None],
-                                    slope[None, :])).mean(axis=0)
+                slope = (
+                    A[-self.span :, :].mean(axis=0) - A[: self.span, :].mean(axis=0)
+                ) / (pix_vec[-self.span :].mean() - pix_vec[: self.span].mean())
+                intercept = (
+                    A[: self.span, :]
+                    - _np.dot(pix_vec[: self.span, None], slope[None, :])
+                ).mean(axis=0)
             if self.copy:
-                return A - _np.dot(pix_vec[:, None],
-                                slope[None, :]) - intercept[None, :]
+                return (
+                    A - _np.dot(pix_vec[:, None], slope[None, :]) - intercept[None, :]
+                )
             else:
-                A -= (_np.dot(pix_vec[:, None],
-                            slope[None, :]) + intercept[None, :])
+                A -= _np.dot(pix_vec[:, None], slope[None, :]) + intercept[None, :]
                 return A
         else:
             if self.span == 1:
                 slope = (A[:, -1] - A[:, 0]) / (pix_vec[-1] - pix_vec[0])
                 intercept = A[:, 0]
             else:
-                slope = ((A[:, -self.span:].mean(axis=1) -
-                        A[:, :self.span].mean(axis=1)) /
-                        (pix_vec[-self.span:].mean() -
-                        pix_vec[:self.span].mean()))
-                intercept = (A[:, :self.span] -
-                            _np.dot(slope[:, None],
-                                    pix_vec[None, :self.span])).mean(axis=1)
+                slope = (
+                    A[:, -self.span :].mean(axis=1) - A[:, : self.span].mean(axis=1)
+                ) / (pix_vec[-self.span :].mean() - pix_vec[: self.span].mean())
+                intercept = (
+                    A[:, : self.span]
+                    - _np.dot(slope[:, None], pix_vec[None, : self.span])
+                ).mean(axis=1)
 
             if self.copy:
-                return A - _np.dot(slope[:, None],
-                                pix_vec[None, :]) - intercept[:, None]
+                return (
+                    A - _np.dot(slope[:, None], pix_vec[None, :]) - intercept[:, None]
+                )
             else:
-                A -= (_np.dot(slope[:, None],
-                            pix_vec[None, :]) + intercept[:, None])
+                A -= _np.dot(slope[:, None], pix_vec[None, :]) + intercept[:, None]
                 return A
+
 
 class ConstraintZeroCumSumEndPoints(Constraint):
     """
@@ -165,18 +180,19 @@ class ConstraintZeroCumSumEndPoints(Constraint):
     span : int
         Number of pixels along the ends to average.
     """
+
     def __init__(self, nodes=None, axis=-1, copy=False):
-        """ A must be non-negative"""
+        """A must be non-negative"""
         super().__init__(copy)
 
         self.nodes = nodes
         if [0, 1, -1].count(axis) != 1:
-            raise TypeError('Axis must be 0, 1, or -1')
+            raise TypeError("Axis must be 0, 1, or -1")
 
         self.axis = axis
 
     def transform(self, A):
-        """ Apply cumsum nonnegative constraint"""
+        """Apply cumsum nonnegative constraint"""
 
         meaner = A.mean(self.axis)
 
@@ -186,36 +202,36 @@ class ConstraintZeroCumSumEndPoints(Constraint):
             self.nodes.discard(-1)
             self.nodes = list(self.nodes)
 
-            if (self.axis == 0):
+            if self.axis == 0:
                 if self.copy:
-                    temp = 1.0*A
+                    temp = 1.0 * A
                     for num in range(len(self.nodes) - 1):
                         n0 = self.nodes[num]
-                        n1 = self.nodes[num+1]
+                        n1 = self.nodes[num + 1]
                         temp[n0:n1, :] -= temp[n0:n1, :].mean(self.axis)[None, :]
                     return temp
                 else:
                     for num in range(len(self.nodes) - 1):
                         n0 = self.nodes[num]
-                        n1 = self.nodes[num+1]
+                        n1 = self.nodes[num + 1]
                         A[n0:n1, :] -= A[n0:n1, :].mean(self.axis)[None, :]
                     return A
             else:
                 if self.copy:
-                    temp = 1.0*A
+                    temp = 1.0 * A
                     for num in range(len(self.nodes) - 1):
                         n0 = self.nodes[num]
-                        n1 = self.nodes[num+1]
+                        n1 = self.nodes[num + 1]
                         temp[:, n0:n1] -= temp[:, n0:n1].mean(self.axis)[:, None]
                     return temp
                 else:
                     for num in range(len(self.nodes) - 1):
                         n0 = self.nodes[num]
-                        n1 = self.nodes[num+1]
+                        n1 = self.nodes[num + 1]
                         A[:, n0:n1] -= A[:, n0:n1].mean(self.axis)[:, None]
                     return A
         else:
-            if (self.axis == 0):
+            if self.axis == 0:
                 if self.copy:
                     return A - meaner[None, :]
                 else:
@@ -258,7 +274,10 @@ class ConstraintNorm(Constraint):
 
 
     """
-    def __init__(self, axis=-1, fix=None, copy=False):
+
+    def __init__(
+        self, axis=-1, scale=1.0, apply=Union[bool, List[bool]], fix=None, copy=False
+    ):
         """Normalize along axis"""
         super().__init__(copy)
         if fix is None:
@@ -271,76 +290,113 @@ class ConstraintNorm(Constraint):
             if _np.issubdtype(fix.dtype, _np.integer):
                 self.fix = fix.tolist()
             else:
-                raise TypeError('ndarrays must be of dtype int')
+                raise TypeError("ndarrays must be of dtype int")
         else:
-            raise TypeError('Parameter fix must be of type None, int, list,',
-                            'tuple, ndarray')
+            raise TypeError(
+                "Parameter fix must be of type None, int, list,", "tuple, ndarray"
+            )
+
+        if scale <= 0:
+            raise ValueError("Scale must be a positive float")
+        self.scale = scale
 
         if not ((axis == 0) | (axis == 1) | (axis == -1)):
-            raise ValueError('Axis must be 0,1, or -1')
+            raise ValueError("Axis must be 0,1, or -1")
         self.axis = axis
 
+        self.apply = apply
+
     def transform(self, A):
-        """ Apply normalization constraint """
+        """Apply normalization constraint"""
+        if type(self.apply) != bool:
+            if len(self.apply) != A.shape[self.axis]:
+                raise ValueError(
+                    "Mismatch in apply vector length. apply vector should have the same length if the desired axis"
+                )
 
         if self.copy:
             if self.axis == 0:
                 if not self.fix:  # No fixed axes
-                    return A / A.sum(axis=self.axis)[None, :]
+                    return (A * self.scale) / A.sum(axis=self.axis)[None, :]
                 else:  # Fixed axes
                     fix_locs = self.fix
-                    not_fix_locs = [v for v in _np.arange(A.shape[0]).tolist()
-                                    if self.fix.count(v) == 0]
+                    not_fix_locs = [
+                        v
+                        for v in _np.arange(A.shape[0]).tolist()
+                        if self.fix.count(v) == 0
+                    ]
                     scaler = _np.ones(A.shape)
                     div = A[not_fix_locs, :].sum(axis=0)[None, :]
                     div[div == 0] = 1
-                    scaler[not_fix_locs, :] = ((1 - A[fix_locs, :].sum(axis=0)[None, :]) / div)
+                    scaler[not_fix_locs, :] = (
+                        1 - A[fix_locs, :].sum(axis=0)[None, :]
+                    ) / div
 
-                    return A * scaler
+                    return (A * self.scale) * scaler
             else:  # Axis = 1 / -1
                 if not self.fix:  # No fixed axes
-                    return A / A.sum(axis=self.axis)[:, None]
+                    return (A * self.scale) / A.sum(axis=self.axis)[:, None]
                 else:  # Fixed axis
                     fix_locs = self.fix
-                    not_fix_locs = [v for v in _np.arange(A.shape[-1]).tolist()
-                                    if self.fix.count(v) == 0]
+                    not_fix_locs = [
+                        v
+                        for v in _np.arange(A.shape[-1]).tolist()
+                        if self.fix.count(v) == 0
+                    ]
                     scaler = _np.ones(A.shape)
                     div = A[:, not_fix_locs].sum(axis=-1)[:, None]
                     div[div == 0] = 1
-                    scaler[:, not_fix_locs] = ((1 - A[:, fix_locs].sum(axis=-1)[:, None]) / div)
+                    scaler[:, not_fix_locs] = (
+                        1 - A[:, fix_locs].sum(axis=-1)[:, None]
+                    ) / div
 
-                    return A * scaler
+                    return (A * self.scale) * scaler
         else:  # Overwrite original data
             if A.dtype != float:
-                raise TypeError('A.dtype must be float for',
-                                'in-place math (copy=False)')
+                raise TypeError(
+                    "A.dtype must be float for", "in-place math (copy=False)"
+                )
 
             if self.axis == 0:
                 if not self.fix:  # No fixed axes
                     A /= A.sum(axis=self.axis)[None, :]
+                    A *= self.scale
                     return A
                 else:  # Fixed axes
                     fix_locs = self.fix
-                    not_fix_locs = [v for v in _np.arange(A.shape[0]).tolist()
-                                    if self.fix.count(v) == 0]
+                    not_fix_locs = [
+                        v
+                        for v in _np.arange(A.shape[0]).tolist()
+                        if self.fix.count(v) == 0
+                    ]
                     scaler = _np.ones(A.shape)
                     div = A[not_fix_locs, :].sum(axis=0)[None, :]
                     div[div == 0] = 1
-                    scaler[not_fix_locs, :] = ((1 - A[fix_locs, :].sum(axis=0)[None, :]) / div)
+                    scaler[not_fix_locs, :] = (
+                        1 - A[fix_locs, :].sum(axis=0)[None, :]
+                    ) / div
+                    A *= self.scale
                     A *= scaler
                     return A
             else:  # Axis = 1 / -1
                 if not self.fix:  # No fixed axes
                     A /= A.sum(axis=self.axis)[:, None]
+                    A *= self.scale
                     return A
                 else:  # Fixed axis
                     fix_locs = self.fix
-                    not_fix_locs = [v for v in _np.arange(A.shape[-1]).tolist()
-                                    if self.fix.count(v) == 0]
+                    not_fix_locs = [
+                        v
+                        for v in _np.arange(A.shape[-1]).tolist()
+                        if self.fix.count(v) == 0
+                    ]
                     scaler = _np.ones(A.shape)
                     div = A[:, not_fix_locs].sum(axis=-1)[:, None]
                     div[div == 0] = 1
-                    scaler[:, not_fix_locs] = ((1 - A[:, fix_locs].sum(axis=-1)[:, None]) / div)
+                    scaler[:, not_fix_locs] = (
+                        1 - A[:, fix_locs].sum(axis=-1)[:, None]
+                    ) / div
+                    A *= self.scale
                     A *= scaler
                     return A
 
@@ -380,16 +436,18 @@ class ConstraintReplaceZeros(Constraint):
             if _np.issubdtype(feature.dtype, _np.integer):
                 self.feature = feature.tolist()
             else:
-                raise TypeError('ndarrays must be of dtype int')
+                raise TypeError("ndarrays must be of dtype int")
         else:
-            raise TypeError('Parameter feature must be of type None, int, list, tuple, ndarray')
+            raise TypeError(
+                "Parameter feature must be of type None, int, list, tuple, ndarray"
+            )
 
         if not ((axis == 0) | (axis == 1) | (axis == -1)):
-            raise ValueError('Axis must be 0,1, or -1')
+            raise ValueError("Axis must be 0,1, or -1")
         self.axis = axis
 
     def transform(self, A):
-        """ Apply constraint """
+        """Apply constraint"""
 
         if self.feature:
             replacement = _np.zeros(A.shape[self.axis])
@@ -398,7 +456,7 @@ class ConstraintReplaceZeros(Constraint):
             replacement *= self.fval
 
             if self.copy:
-                A_out = 1*A
+                A_out = 1 * A
                 if self.axis == 0:
                     A_out[:, A_out.sum(axis=0) == 0] = replacement[:, None]
                 else:  # Axis 1 / -1
@@ -433,8 +491,10 @@ class _CutExclude(Constraint):
     copy : bool
         Make copy of input data, A; otherwise, overwrite (if mutable)
     """
-    def __init__(self, value=0, axis_sumnz=None, exclude=None,
-                 exclude_axis=-1, copy=False):
+
+    def __init__(
+        self, value=0, axis_sumnz=None, exclude=None, exclude_axis=-1, copy=False
+    ):
         """ """
         super().__init__(copy)
         self.value = value
@@ -474,30 +534,45 @@ class ConstraintCutBelow(_CutExclude):
     copy : bool
         Make copy of input data, A; otherwise, overwrite (if mutable)
     """
-    def __init__(self, value=0, axis_sumnz=None, exclude=None, exclude_axis=-1, copy=False):
-        """ Initialize """
-        super().__init__(value=value, axis_sumnz=axis_sumnz, exclude=exclude,
-                         exclude_axis=exclude_axis, copy=copy)
+
+    def __init__(
+        self, value=0, axis_sumnz=None, exclude=None, exclude_axis=-1, copy=False
+    ):
+        """Initialize"""
+        super().__init__(
+            value=value,
+            axis_sumnz=axis_sumnz,
+            exclude=exclude,
+            exclude_axis=exclude_axis,
+            copy=copy,
+        )
 
     def transform(self, A):
-        """ Apply cut-below value constraint"""
+        """Apply cut-below value constraint"""
         if self._excl_mat is None:
             self._make_excl_mat(A.shape)
 
         if self.axis is None:
             if self.copy:
-                return A*((A >= self.value) | self._excl_mat)
+                return A * ((A >= self.value) | self._excl_mat)
             else:
-                A *= ((A >= self.value) | self._excl_mat)
+                A *= (A >= self.value) | self._excl_mat
                 return A
         else:
             if self.copy:
-                return A*(_np.alltrue(A < self.value, axis=self.axis, keepdims=True) +
-                        (A >= self.value) + self._excl_mat)
+                return A * (
+                    _np.alltrue(A < self.value, axis=self.axis, keepdims=True)
+                    + (A >= self.value)
+                    + self._excl_mat
+                )
             else:
-                A *= (_np.alltrue(A < self.value, axis=self.axis, keepdims=True) +
-                    (A >= self.value) + self._excl_mat)
+                A *= (
+                    _np.alltrue(A < self.value, axis=self.axis, keepdims=True)
+                    + (A >= self.value)
+                    + self._excl_mat
+                )
                 return A
+
 
 class ConstraintCompressBelow(Constraint):
     """
@@ -513,18 +588,18 @@ class ConstraintCompressBelow(Constraint):
     """
 
     def __init__(self, value=0, copy=False):
-        """  """
+        """ """
         super().__init__(copy)
         self.value = value
 
     def transform(self, A):
-        """ Apply compress-below value constraint"""
+        """Apply compress-below value constraint"""
 
         if self.copy:
-            return A*(A >= self.value) + self.value*(A < self.value)
+            return A * (A >= self.value) + self.value * (A < self.value)
         else:
-            temp = self.value*(A < self.value)
-            A *= (A >= self.value)
+            temp = self.value * (A < self.value)
+            A *= A >= self.value
             A += temp
             return A
 
@@ -548,29 +623,43 @@ class ConstraintCutAbove(_CutExclude):
     copy : bool
         Make copy of input data, A; otherwise, overwrite (if mutable)
     """
-    def __init__(self, value=0, axis_sumnz=None, exclude=None, exclude_axis=-1, copy=False):
+
+    def __init__(
+        self, value=0, axis_sumnz=None, exclude=None, exclude_axis=-1, copy=False
+    ):
         """ """
-        super().__init__(value=value, axis_sumnz=axis_sumnz, exclude=exclude,
-                         exclude_axis=exclude_axis, copy=copy)
+        super().__init__(
+            value=value,
+            axis_sumnz=axis_sumnz,
+            exclude=exclude,
+            exclude_axis=exclude_axis,
+            copy=copy,
+        )
 
     def transform(self, A):
-        """ Apply cut-above value constraint"""
+        """Apply cut-above value constraint"""
 
         if self._excl_mat is None:
             self._make_excl_mat(A.shape)
         if self.axis is None:
             if self.copy:
-                return A*((A <= self.value) | self._excl_mat)
+                return A * ((A <= self.value) | self._excl_mat)
             else:
-                A *= ((A <= self.value) | self._excl_mat)
+                A *= (A <= self.value) | self._excl_mat
                 return A
         else:
             if self.copy:
-                return A*(_np.alltrue(A > self.value, axis=self.axis, keepdims=True) +
-                        (A <= self.value) + self._excl_mat)
+                return A * (
+                    _np.alltrue(A > self.value, axis=self.axis, keepdims=True)
+                    + (A <= self.value)
+                    + self._excl_mat
+                )
             else:
-                A *= (_np.alltrue(A > self.value, axis=self.axis, keepdims=True) +
-                    (A <= self.value) + self._excl_mat)
+                A *= (
+                    _np.alltrue(A > self.value, axis=self.axis, keepdims=True)
+                    + (A <= self.value)
+                    + self._excl_mat
+                )
                 return A
 
 
@@ -588,20 +677,21 @@ class ConstraintCompressAbove(Constraint):
     """
 
     def __init__(self, value=0, copy=False):
-        """  """
+        """ """
         super().__init__(copy)
         self.value = value
 
     def transform(self, A):
-        """ Apply compress-above value constraint"""
+        """Apply compress-above value constraint"""
 
         if self.copy:
-            return A*(A <= self.value) + self.value*(A > self.value)
+            return A * (A <= self.value) + self.value * (A > self.value)
         else:
-            temp = self.value*(A > self.value)
-            A *= (A <= self.value)
+            temp = self.value * (A > self.value)
+            A *= A <= self.value
             A += temp
             return A
+
 
 class ConstraintPlanarize(Constraint):
     """
@@ -640,15 +730,24 @@ class ConstraintPlanarize(Constraint):
 
     """
 
-    def __init__(self, target, shape, use_vals_above=None, use_vals_below=None,
-                 lims_to_plane=True, scaler=None, recalc_scaler=False, copy=False):
+    def __init__(
+        self,
+        target,
+        shape,
+        use_vals_above=None,
+        use_vals_below=None,
+        lims_to_plane=True,
+        scaler=None,
+        recalc_scaler=False,
+        copy=False,
+    ):
         super().__init__(copy)
         if isinstance(target, int):
             self.target = [target]
         elif isinstance(target, (list, tuple, _np.ndarray)):
             self.target = target
         else:
-            raise TypeError('target must be an int, list, 2D ndarray, or tuple')
+            raise TypeError("target must be an int, list, 2D ndarray, or tuple")
 
         self.shape = shape
         self.copy = copy
@@ -667,28 +766,27 @@ class ConstraintPlanarize(Constraint):
             self._setup_xy(scaler)
 
     def _setup_xy(self, scaler):
-
         self.scaler = scaler
-        self._x = scaler*_np.arange(self.shape[1], dtype=float)
-        self._y = scaler*_np.arange(self.shape[0], dtype=float)
+        self._x = scaler * _np.arange(self.shape[1], dtype=float)
+        self._y = scaler * _np.arange(self.shape[0], dtype=float)
 
         self._X, self._Y = _np.meshgrid(self._x, self._y)
         self._X = self._X.ravel()
         self._Y = self._Y.ravel()
 
     def transform(self, A):
-        """ Set targets, t, to fit planes """
+        """Set targets, t, to fit planes"""
 
         if (self.scaler is None) | (self.recalc):
             self._setup_xy(1e3 * _np.abs(A.max() - A.min()))
 
         if self.copy:
-            A2 = 1*A
+            A2 = 1 * A
 
         for t in self.target:
-            X2 = 1*self._X
-            Y2 = 1*self._Y
-            Z2 = 1*A[:, t]
+            X2 = 1 * self._X
+            Y2 = 1 * self._Y
+            Z2 = 1 * A[:, t]
 
             Stack = _np.vstack((X2, Y2, Z2))
 
@@ -707,11 +805,15 @@ class ConstraintPlanarize(Constraint):
             Stack = Stack - Stack.mean(axis=-1)[:, None]
 
             U, s, Vh = _np.linalg.svd(Stack, full_matrices=False)
-            norm_to_plane = 1*U[:, -1]
+            norm_to_plane = 1 * U[:, -1]
 
-            plane = (((-norm_to_plane[0] * (self._X - X2.mean())) -
-                    (norm_to_plane[1] * (self._Y - Y2.mean()))) /
-                    norm_to_plane[2]) + Z2.mean()
+            plane = (
+                (
+                    (-norm_to_plane[0] * (self._X - X2.mean()))
+                    - (norm_to_plane[1] * (self._Y - Y2.mean()))
+                )
+                / norm_to_plane[2]
+            ) + Z2.mean()
 
             if self.lims_to_plane:
                 if self.use_above is not None:
@@ -728,7 +830,7 @@ class ConstraintPlanarize(Constraint):
             return A
 
 
-if __name__ == '__main__':  # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     A = _np.array([[1, 2, 3, 4], [4, 5, 6, 7], [7, 8, 9, 10]]).astype(float)
     A_transform = _np.array([[1, 2, 3, 4], [4, 0, 0, 0], [0, 0, 0, 0]]).astype(float)
 
@@ -736,4 +838,5 @@ if __name__ == '__main__':  # pragma: no cover
     out = constr.transform(A)
 
     from numpy.testing import assert_allclose as _assert_allclose
+
     _assert_allclose(out, A_transform)

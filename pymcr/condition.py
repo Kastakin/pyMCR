@@ -1,12 +1,13 @@
 """ Functions to condition / preprocess data """
 import numpy as _np
 
-__all__ = ['standardize']
+__all__ = ["standardize"]
+
 
 def standardize(X, mean_ctr=True, with_std=True, axis=-1, copy=True):
     """
     Standardization of data
-    
+
     Parameters
     ----------
 
@@ -18,7 +19,7 @@ def standardize(X, mean_ctr=True, with_std=True, axis=-1, copy=True):
 
     with_std : bool
         Normalize by the standard deviation of the data
-    
+
     axis : int
         Axis from which to calculate mean and standard deviation
 
@@ -28,7 +29,7 @@ def standardize(X, mean_ctr=True, with_std=True, axis=-1, copy=True):
     """
 
     if copy:
-        Xsc = 1*X
+        Xsc = 1 * X
     else:
         Xsc = X
 

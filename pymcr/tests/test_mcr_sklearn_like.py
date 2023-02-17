@@ -10,22 +10,23 @@ from pymcr.mcr import McrAR
 from pymcr.metrics import mse
 from pymcr.constraints import ConstraintNonneg, ConstraintNorm
 
+
 @pytest.fixture(scope="function")
 def dataset():
-    """ Setups dataset """
+    """Setups dataset"""
 
     M = 21
     N = 21
     P = 101
     n_components = 2
 
-    C_img = np.zeros((M,N,n_components))
-    C_img[...,0] = np.dot(np.ones((M,1)),np.linspace(0,1,N)[None,:])
-    C_img[...,1] = 1 - C_img[...,0]
+    C_img = np.zeros((M, N, n_components))
+    C_img[..., 0] = np.dot(np.ones((M, 1)), np.linspace(0, 1, N)[None, :])
+    C_img[..., 1] = 1 - C_img[..., 0]
 
     St_known = np.zeros((n_components, P))
-    St_known[0,40:60] = 1
-    St_known[1,60:80] = 2
+    St_known[0, 40:60] = 1
+    St_known[1, 60:80] = 2
 
     C_known = C_img.reshape((-1, n_components))
 
@@ -33,84 +34,103 @@ def dataset():
 
     yield C_known, D_known, St_known
 
+
 def test_sklearn_mcr_ideal_default(dataset):
-    """ Provides C/St_known so optimal should be 1 iteration """
+    """Provides C/St_known so optimal should be 1 iteration"""
 
     C_known, D_known, St_known = dataset
 
-    mcrar = McrAR(fit_kwargs={'ST':St_known})
+    mcrar = McrAR(fit_kwargs={"ST": St_known})
     mcrar.fit(D_known)
     assert_equal(1, mcrar.n_iter_opt)
-    assert ((mcrar.D_ - D_known)**2).mean() < 1e-10
-    assert ((mcrar.D_opt_ - D_known)**2).mean() < 1e-10
+    assert ((mcrar.D_ - D_known) ** 2).mean() < 1e-10
+    assert ((mcrar.D_opt_ - D_known) ** 2).mean() < 1e-10
 
-    mcrar = McrAR(fit_kwargs={'C':C_known})
+    mcrar = McrAR(fit_kwargs={"C": C_known})
     mcrar.fit(D_known)
     assert_equal(2, mcrar.n_iter_opt)
-    assert ((mcrar.D_ - D_known)**2).mean() < 1e-10
-    assert ((mcrar.D_opt_ - D_known)**2).mean() < 1e-10
+    assert ((mcrar.D_ - D_known) ** 2).mean() < 1e-10
+    assert ((mcrar.D_opt_ - D_known) ** 2).mean() < 1e-10
+
 
 def test_sklearn_mcr_ideal_str_regressors(dataset):
-    """ Test MCR with string-provded regressors"""
+    """Test MCR with string-provded regressors"""
 
     C_known, D_known, St_known = dataset
 
-    mcrar = McrAR(c_regr='OLS', st_regr='OLS', fit_kwargs={'ST':St_known})
+    mcrar = McrAR(c_regr="OLS", st_regr="OLS", fit_kwargs={"ST": St_known})
     mcrar.fit(D_known, verbose=True)
     assert_equal(1, mcrar.n_iter_opt)
     assert isinstance(mcrar.c_regressor, pymcr.regressors.OLS)
     assert isinstance(mcrar.st_regressor, pymcr.regressors.OLS)
 
-    mcrar = McrAR(c_regr='NNLS', st_regr='NNLS', fit_kwargs={'ST':St_known})
+    mcrar = McrAR(c_regr="NNLS", st_regr="NNLS", fit_kwargs={"ST": St_known})
     mcrar.fit(D_known)
     assert_equal(1, mcrar.n_iter_opt)
     assert isinstance(mcrar.c_regressor, pymcr.regressors.NNLS)
     assert isinstance(mcrar.st_regressor, pymcr.regressors.NNLS)
-    assert ((mcrar.D_ - D_known)**2).mean() < 1e-10
-    assert ((mcrar.D_opt_ - D_known)**2).mean() < 1e-10
+    assert ((mcrar.D_ - D_known) ** 2).mean() < 1e-10
+    assert ((mcrar.D_opt_ - D_known) ** 2).mean() < 1e-10
 
     # Provided C_known this time
-    mcrar = McrAR(c_regr='OLS', st_regr='OLS', fit_kwargs={'C':C_known})
+    mcrar = McrAR(c_regr="OLS", st_regr="OLS", fit_kwargs={"C": C_known})
     mcrar.fit(D_known)
 
     # Turns out some systems get it in 1 iteration, some in 2
     # assert_equal(1, mcrar.n_iter_opt)
-    assert_equal(True, mcrar.n_iter_opt<=2)
+    assert_equal(True, mcrar.n_iter_opt <= 2)
 
-    assert ((mcrar.D_ - D_known)**2).mean() < 1e-10
-    assert ((mcrar.D_opt_ - D_known)**2).mean() < 1e-10
+    assert ((mcrar.D_ - D_known) ** 2).mean() < 1e-10
+    assert ((mcrar.D_opt_ - D_known) ** 2).mean() < 1e-10
+
 
 def test_sklearn_mcr_max_iterations(dataset):
-    """ Test MCR exits at max_iter"""
+    """Test MCR exits at max_iter"""
 
     C_known, D_known, St_known = dataset
 
     # Seeding with a constant of 0.1 for C, actually leads to a bad local
     # minimum; thus, the err_change gets really small with a relatively bad
     # error. The tol_err_change is set to None, so it makes it to max_iter.
-    mcrar = McrAR(max_iter=50, c_regr='OLS', st_regr='OLS',
-                  st_constraints=[ConstraintNonneg()],
-                  c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                  tol_increase=None, tol_n_increase=None,
-                  tol_err_change=None, tol_n_above_min=None, fit_kwargs={'C':C_known*0 + 0.1})
+    mcrar = McrAR(
+        max_iter=50,
+        c_regr="OLS",
+        st_regr="OLS",
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_increase=None,
+        tol_n_increase=None,
+        tol_err_change=None,
+        tol_n_above_min=None,
+        fit_kwargs={"C": C_known * 0 + 0.1},
+    )
     mcrar.fit(D_known)
     assert mcrar.exit_max_iter_reached
 
+
 def test_sklearn_mcr_tol_increase(dataset):
-    """ Test MCR exits due error increasing above a tolerance fraction"""
+    """Test MCR exits due error increasing above a tolerance fraction"""
 
     C_known, D_known, St_known = dataset
 
     # Seeding with a constant of 0.1 for C, actually leads to a bad local
     # minimum; thus, the err_change gets really small with a relatively bad
     # error.
-    mcrar = McrAR(max_iter=50, c_regr='OLS', st_regr='OLS',
-                    st_constraints=[ConstraintNonneg()],
-                    c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                    tol_increase=0, tol_n_increase=None,
-                    tol_err_change=None, tol_n_above_min=None, fit_kwargs={'C':C_known*0 + 0.1})
+    mcrar = McrAR(
+        max_iter=50,
+        c_regr="OLS",
+        st_regr="OLS",
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_increase=0,
+        tol_n_increase=None,
+        tol_err_change=None,
+        tol_n_above_min=None,
+        fit_kwargs={"C": C_known * 0 + 0.1},
+    )
     mcrar.fit(D_known)
     assert mcrar.exit_tol_increase
+
 
 def test_sklearn_mcr_tol_n_increase(dataset):
     """
@@ -122,26 +142,42 @@ def test_sklearn_mcr_tol_n_increase(dataset):
 
     C_known, D_known, St_known = dataset
 
-    mcrar = McrAR(max_iter=50, c_regr='OLS', st_regr='OLS',
-                    st_constraints=[ConstraintNonneg()],
-                    c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                    tol_increase=None, tol_n_increase=0,
-                    tol_err_change=None, tol_n_above_min=None, fit_kwargs={'C':C_known*0 + 0.1})
+    mcrar = McrAR(
+        max_iter=50,
+        c_regr="OLS",
+        st_regr="OLS",
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_increase=None,
+        tol_n_increase=0,
+        tol_err_change=None,
+        tol_n_above_min=None,
+        fit_kwargs={"C": C_known * 0 + 0.1},
+    )
     mcrar.fit(D_known)
     assert mcrar.exit_tol_n_increase
 
+
 def test_sklearn_mcr_tol_err_change(dataset):
-    """ Test MCR exits due error increasing by a value """
+    """Test MCR exits due error increasing by a value"""
 
     C_known, D_known, St_known = dataset
 
-    mcrar = McrAR(max_iter=50, c_regr='OLS', st_regr='OLS',
-                    st_constraints=[ConstraintNonneg()],
-                    c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                    tol_increase=None, tol_n_increase=None,
-                    tol_err_change=1e-20, tol_n_above_min=None, fit_kwargs={'C':C_known})
+    mcrar = McrAR(
+        max_iter=50,
+        c_regr="OLS",
+        st_regr="OLS",
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_increase=None,
+        tol_n_increase=None,
+        tol_err_change=1e-20,
+        tol_n_above_min=None,
+        fit_kwargs={"C": C_known},
+    )
     mcrar.fit(D_known)
     assert mcrar.exit_tol_err_change
+
 
 def test_sklearn_mcr_tol_n_above_min(dataset):
     """
@@ -153,33 +189,40 @@ def test_sklearn_mcr_tol_n_above_min(dataset):
 
     C_known, D_known, St_known = dataset
 
-    mcrar = McrAR(max_iter=50, c_regr='OLS', st_regr='OLS',
-                    st_constraints=[ConstraintNonneg()],
-                    c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                    tol_increase=None, tol_n_increase=None,
-                    tol_err_change=None, tol_n_above_min=0, fit_kwargs={'C':C_known*0 + 0.1})
+    mcrar = McrAR(
+        max_iter=50,
+        c_regr="OLS",
+        st_regr="OLS",
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_increase=None,
+        tol_n_increase=None,
+        tol_err_change=None,
+        tol_n_above_min=0,
+        fit_kwargs={"C": C_known * 0 + 0.1},
+    )
     mcrar.fit(D_known)
     assert mcrar.exit_tol_n_above_min
 
 
 def test_sklearn_mcr_st_semilearned():
-    """ Test when St items are fixed, i.e., enforced to be the same as the input, always """
+    """Test when St items are fixed, i.e., enforced to be the same as the input, always"""
 
     M = 21
     N = 21
     P = 101
     n_components = 3
 
-    C_img = np.zeros((M,N,n_components))
-    C_img[...,0] = np.dot(np.ones((M,1)),np.linspace(0,1,N)[None,:])
-    C_img[...,1] = np.dot(np.linspace(0,1,M)[:, None], np.ones((1,N)))
-    C_img[...,2] = 1 - C_img[...,0] - C_img[...,1]
-    C_img = C_img / C_img.sum(axis=-1)[:,:,None]
+    C_img = np.zeros((M, N, n_components))
+    C_img[..., 0] = np.dot(np.ones((M, 1)), np.linspace(0, 1, N)[None, :])
+    C_img[..., 1] = np.dot(np.linspace(0, 1, M)[:, None], np.ones((1, N)))
+    C_img[..., 2] = 1 - C_img[..., 0] - C_img[..., 1]
+    C_img = C_img / C_img.sum(axis=-1)[:, :, None]
 
     St_known = np.zeros((n_components, P))
-    St_known[0,30:50] = 1
-    St_known[1,50:70] = 2
-    St_known[2,70:90] = 3
+    St_known[0, 30:50] = 1
+    St_known[1, 50:70] = 2
+    St_known[2, 70:90] = 3
     St_known += 1
 
     C_known = C_img.reshape((-1, n_components))
@@ -189,33 +232,39 @@ def test_sklearn_mcr_st_semilearned():
     ST_guess = 1 * St_known
     ST_guess[2, :] = np.random.randn(P)
 
-    mcrar = McrAR(max_iter=50, tol_increase=100, tol_n_increase=10,
-                  st_constraints=[ConstraintNonneg()],
-                  c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                  tol_err_change=1e-10, fit_kwargs={'ST':ST_guess, 'st_fix':[0,1]})
+    mcrar = McrAR(
+        max_iter=50,
+        tol_increase=100,
+        tol_n_increase=10,
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_err_change=1e-10,
+        fit_kwargs={"ST": ST_guess, "st_fix": [0, 1]},
+    )
 
     mcrar.fit(D_known)
-    assert_equal(mcrar.ST_[0,:], St_known[0,:])
-    assert_equal(mcrar.ST_[1,:], St_known[1,:])
+    assert_equal(mcrar.ST_[0, :], St_known[0, :])
+    assert_equal(mcrar.ST_[1, :], St_known[1, :])
+
 
 def test_sklearn_mcr_c_semilearned():
-    """ Test when C items are fixed, i.e., enforced to be the same as the input, always """
+    """Test when C items are fixed, i.e., enforced to be the same as the input, always"""
 
     M = 21
     N = 21
     P = 101
     n_components = 3
 
-    C_img = np.zeros((M,N,n_components))
-    C_img[...,0] = np.dot(np.ones((M,1)),np.linspace(0,1,N)[None,:])
-    C_img[...,1] = np.dot(np.linspace(0,1,M)[:, None], np.ones((1,N)))
-    C_img[...,2] = 1 - C_img[...,0] - C_img[...,1]
-    C_img = C_img / C_img.sum(axis=-1)[:,:,None]
+    C_img = np.zeros((M, N, n_components))
+    C_img[..., 0] = np.dot(np.ones((M, 1)), np.linspace(0, 1, N)[None, :])
+    C_img[..., 1] = np.dot(np.linspace(0, 1, M)[:, None], np.ones((1, N)))
+    C_img[..., 2] = 1 - C_img[..., 0] - C_img[..., 1]
+    C_img = C_img / C_img.sum(axis=-1)[:, :, None]
 
     St_known = np.zeros((n_components, P))
-    St_known[0,30:50] = 1
-    St_known[1,50:70] = 2
-    St_known[2,70:90] = 3
+    St_known[0, 30:50] = 1
+    St_known[1, 50:70] = 2
+    St_known[2, 70:90] = 3
     St_known += 1
 
     C_known = C_img.reshape((-1, n_components))
@@ -223,16 +272,22 @@ def test_sklearn_mcr_c_semilearned():
     D_known = np.dot(C_known, St_known)
 
     C_guess = 1 * C_known
-    C_guess[:, 2] = np.abs(np.random.randn(int(M*N))+0.1)
+    C_guess[:, 2] = np.abs(np.random.randn(int(M * N)) + 0.1)
 
-    mcrar = McrAR(max_iter=50, tol_increase=100, tol_n_increase=10,
-                    st_constraints=[ConstraintNonneg()],
-                    c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                    tol_err_change=1e-10, fit_kwargs={'C':C_guess, 'c_fix':[0,1]})
+    mcrar = McrAR(
+        max_iter=50,
+        tol_increase=100,
+        tol_n_increase=10,
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_err_change=1e-10,
+        fit_kwargs={"C": C_guess, "c_fix": [0, 1]},
+    )
 
     mcrar.fit(D_known)
     assert_equal(mcrar.C_[:, 0], C_known[:, 0])
     assert_equal(mcrar.C_[:, 1], C_known[:, 1])
+
 
 def test_sklearn_mcr_semilearned_both_c_st():
     """
@@ -245,16 +300,16 @@ def test_sklearn_mcr_semilearned_both_c_st():
     P = 101
     n_components = 3
 
-    C_img = np.zeros((M,N,n_components))
-    C_img[...,0] = np.dot(np.ones((M,1)),np.linspace(0.1,1,N)[None,:])
-    C_img[...,1] = np.dot(np.linspace(0.1,1,M)[:, None], np.ones((1,N)))
-    C_img[...,2] = 1 - C_img[...,0] - C_img[...,1]
-    C_img = C_img / C_img.sum(axis=-1)[:,:,None]
+    C_img = np.zeros((M, N, n_components))
+    C_img[..., 0] = np.dot(np.ones((M, 1)), np.linspace(0.1, 1, N)[None, :])
+    C_img[..., 1] = np.dot(np.linspace(0.1, 1, M)[:, None], np.ones((1, N)))
+    C_img[..., 2] = 1 - C_img[..., 0] - C_img[..., 1]
+    C_img = C_img / C_img.sum(axis=-1)[:, :, None]
 
     St_known = np.zeros((n_components, P))
-    St_known[0,30:50] = 1
-    St_known[1,50:70] = 2
-    St_known[2,70:90] = 3
+    St_known[0, 30:50] = 1
+    St_known[1, 50:70] = 2
+    St_known[2, 70:90] = 3
     St_known += 1
 
     C_known = C_img.reshape((-1, n_components))
@@ -262,13 +317,17 @@ def test_sklearn_mcr_semilearned_both_c_st():
     D_known = np.dot(C_known, St_known)
 
     C_guess = 1 * C_known
-    C_guess[:, 2] = np.abs(np.random.randn(int(M*N)))
+    C_guess[:, 2] = np.abs(np.random.randn(int(M * N)))
 
-    mcrar = McrAR(max_iter=50, tol_increase=100, tol_n_increase=10,
-                    st_constraints=[ConstraintNonneg()],
-                    c_constraints=[ConstraintNonneg(), ConstraintNorm()],
-                    tol_err_change=1e-10, fit_kwargs={'C':C_guess, 'ST':St_known, 
-                    'c_fix':[0,1], 'st_fix':[0]})
+    mcrar = McrAR(
+        max_iter=50,
+        tol_increase=100,
+        tol_n_increase=10,
+        st_constraints=[ConstraintNonneg()],
+        c_constraints=[ConstraintNonneg(), ConstraintNorm()],
+        tol_err_change=1e-10,
+        fit_kwargs={"C": C_guess, "ST": St_known, "c_fix": [0, 1], "st_fix": [0]},
+    )
 
     mcrar.fit(D_known, c_first=True)
     assert_equal(mcrar.C_[:, 0], C_known[:, 0])
@@ -276,15 +335,15 @@ def test_sklearn_mcr_semilearned_both_c_st():
     assert_equal(mcrar.ST_[0, :], St_known[0, :])
 
     # ST-solve first
-    mcrar.fit(D_known, C=C_guess, ST=St_known, c_fix=[0,1], st_fix=[0], c_first=False)
+    mcrar.fit(D_known, C=C_guess, ST=St_known, c_fix=[0, 1], st_fix=[0], c_first=False)
     assert_equal(mcrar.C_[:, 0], C_known[:, 0])
     assert_equal(mcrar.C_[:, 1], C_known[:, 1])
     assert_equal(mcrar.ST_[0, :], St_known[0, :])
 
-def test_sklearn_mcr_errors():
 
+def test_sklearn_mcr_errors():
     # Providing C in fit_kwargs and S^T to fit without both C_fix and St_fix
     with pytest.raises(TypeError):
-        mcrar = McrAR(fit_kwargs={'C':np.random.randn(10,3), 'c_fix':[0]})
+        mcrar = McrAR(fit_kwargs={"C": np.random.randn(10, 3), "c_fix": [0]})
         # Only c_fix
-        mcrar.fit(np.random.randn(10,5), ST=np.random.randn(3,5))
+        mcrar.fit(np.random.randn(10, 5), ST=np.random.randn(3, 5))
