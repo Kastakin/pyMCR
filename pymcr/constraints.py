@@ -276,7 +276,12 @@ class ConstraintNorm(Constraint):
     """
 
     def __init__(
-        self, axis=-1, scale=1.0, apply=Union[bool, List[bool]], fix=None, copy=False
+        self,
+        axis=-1,
+        scale=1.0,
+        apply: Union[bool, List[bool]] = True,
+        fix=None,
+        copy=False,
     ):
         """Normalize along axis"""
         super().__init__(copy)
