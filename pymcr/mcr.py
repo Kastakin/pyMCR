@@ -303,10 +303,10 @@ class McrAR:
             Log iteration and per-least squares err results. See Notes.
 
         post_iter_fcn : function
-            Function to perform after each iteration
+            Function to perform after each iteration.
 
         post_half_fcn : function
-            Function to perform after half-iteration
+            Function to perform after half-iteration.
 
         Notes
         -----
