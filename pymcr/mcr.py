@@ -539,13 +539,6 @@ class McrAR:
                 if post_iter_fcn is not None:
                     post_iter_fcn(self.C_, self.ST_, D, D_calc)
 
-            if self.n_iter >= self.max_iter:
-                _logger.info('Max iterations reached ({}).'.format(num + 1))
-                self.exit_max_iter_reached = True
-                break
-
-            self.n_iter = num + 1
-
             # Check if err changed (absolute value), per iteration, less
             #  than abs(tol_err_change)
 
@@ -558,6 +551,9 @@ class McrAR:
                     )
                     self.exit_tol_err_change = True
                     break
+
+        _logger.info(f"Max iterations reached ({num + 1}).")
+        self.exit_max_iter_reached = True
 
     def fit_transform(self, D, **kwargs):
         """
