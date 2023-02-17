@@ -1,5 +1,6 @@
 """ MCR Main Class for Computation"""
 import sys as _sys
+from tqdm import tqdm
 
 import numpy as _np
 import logging as _logging
@@ -354,7 +355,7 @@ class McrAR:
         # Both C and ST provided. special_skip_c comes into play below
         both_condition = (self.ST_ is not None) & (self.C_ is not None)
 
-        for num in range(self.max_iter):
+        for num in tqdm(range(self.max_iter)):
             self.n_iter = num + 1
 
             # Both st and c provided, but c_first is False

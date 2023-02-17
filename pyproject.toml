@@ -37,6 +37,7 @@ changelog = "https://github.com/usnistgov/pyMCR/blob/master/CHANGELOG.rst"
 python = ">=3.8,<3.11"
 numpy = "^1.24"
 scipy = "^1.10.0"
+tqdm = "^4.64.1"
 
 [tool.poetry.group.dev.dependencies]
 tbump = "^6.9.0"
