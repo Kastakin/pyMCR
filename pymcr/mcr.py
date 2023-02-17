@@ -290,10 +290,10 @@ class McrAR:
         Notes
         -----
 
-        -   Parameters to fit will SUPERCEDE anything in fit_kwargs, if provided during McrAR
-            instantiation.
-            -   Note that providing C (or ST) to fit_kwargs and providing ST (or C) to fit or
-                fit_transform will raise an error.
+        -   Parameters to fit will SUPERCEDE anything in fit_kwargs, if provided during
+            McrAR instantiation.
+            -   Note that providing C (or ST) to fit_kwargs and providing ST (or C) to
+                fit or fit_transform will raise an error.
             -   When in doubt, clear fit_kwargs via self.fit_kwargs = {}
             -   Does not affect verbose or c_first parameters
 
@@ -337,12 +337,12 @@ class McrAR:
 
         # Ensure only C or ST provided
         if (C is None) & (ST is None):
-            raise TypeError('C or ST estimate must be provided')
-        elif (C is not None) & (ST is not None) & ((c_fix is None) |
-                                                   (st_fix is None)):
-            err_str1 = 'Only C or ST estimate must be provided, '
+            raise TypeError("C or ST estimate must be provided")
+        elif (C is not None) & (ST is not None) & ((c_fix is None) | (st_fix is None)):
             raise TypeError(
-                err_str1 + 'unless c_fix and st_fix are both provided')
+                "Only C or ST estimate must be provided, unless c_fix and st_fix are"
+                " both provided"
+            )
         else:
             self.C_ = _np.asanyarray(C) if C is not None else C
             self.ST_ = _np.asanyarray(ST) if ST is not None else ST
@@ -399,10 +399,10 @@ class McrAR:
 
                 if self.tol_n_above_min is not None:
                     if self.n_above_min > self.tol_n_above_min:
-                        err_str1 = 'Half-iterated {} times since ' \
-                                   'min '.format(self.n_above_min)
-                        err_str2 = 'error. Exiting.'
-                        _logger.info(err_str1 + err_str2)
+                        _logger.info(
+                            f"Half-iterated {self.n_above_min} times since min error."
+                            " Exiting."
+                        )
                         self.exit_tol_n_above_min = True
                         break
 
@@ -417,9 +417,10 @@ class McrAR:
                     self.err.append(1 * err_temp)
                     self.C_ = 1 * C_temp
                 else:
-                    err_str1 = 'Error increased above fractional' \
-                               'ctol_increase (C iter). Exiting'
-                    _logger.info(err_str1)
+                    _logger.info(
+                        "Error increased above fractional ctol_increase (C iter)."
+                        " Exiting"
+                    )
                     self.exit_tol_increase = True
                     break
 
@@ -433,17 +434,16 @@ class McrAR:
                 # Break if too many error-increases in a row
                 if self.tol_n_increase is not None:
                     if self.n_increase > self.tol_n_increase:
-                        out_str1 = 'Maximum error increases reached '
                         _logger.info(
-                            out_str1 + '({}) (C iter). '
-                                       'Exiting.'.format(self.tol_n_increase))
+                            f"Maximum error increases reached  ({self.tol_n_increase})"
+                            " (C iter). Exiting."
+                        )
                         self.exit_tol_n_increase = True
                         break
 
-                _logger.debug('Iter: {} (C)\t{}: '
-                              '{:.4e}'.format(self.n_iter,
-                                              self.err_fcn.__name__,
-                                              err_temp))
+                _logger.debug(
+                    f"Iter: {self.n_iter} (C)\t{self.err_fcn.__name__}: {err_temp:.4e}"
+                )
 
                 if post_half_fcn is not None:
                     post_half_fcn(self.C_, self.ST_, D, D_calc)
@@ -486,10 +486,10 @@ class McrAR:
 
                 if self.tol_n_above_min is not None:
                     if self.n_above_min > self.tol_n_above_min:
-                        err_str1 = 'Half-iterated {} times ' \
-                                   'since min '.format(self.n_above_min)
-                        err_str2 = 'error. Exiting.'
-                        _logger.info(err_str1 + err_str2)
+                        _logger.info(
+                            f"Half-iterated {self.n_above_min} times since min error."
+                            " Exiting."
+                        )
                         self.exit_tol_n_above_min = True
                         break
 
@@ -503,9 +503,10 @@ class McrAR:
                     self.err.append(1 * err_temp)
                     self.ST_ = 1 * ST_temp
                 else:
-                    err_str1 = 'Error increased above fractional ' \
-                               'tol_increase (ST iter). Exiting'
-                    _logger.info(err_str1)
+                    _logger.info(
+                        "Error increased above fractional tol_increase (ST iter)."
+                        " Exiting"
+                    )
                     self.exit_tol_increase = True
                     break
 
@@ -519,16 +520,17 @@ class McrAR:
                 # Break if too many error-increases in a row
                 if self.tol_n_increase is not None:
                     if self.n_increase > self.tol_n_increase:
-                        out_str = 'Maximum error increases reached '
-                        _logger.info(out_str +
-                                     '({}) (ST iter). '
-                                     'Exiting.'.format(self.tol_n_increase))
+                        _logger.info(
+                            f"Maximum error increases reached ({self.tol_n_increase})"
+                            " (ST iter). Exiting."
+                        )
                         self.exit_tol_n_increase = True
                         break
 
-                _logger.debug('Iter: {} (ST)\t{}: '
-                              '{:.4e}'.format(self.n_iter,
-                                              self.err_fcn.__name__, err_temp))
+                _logger.debug(
+                    f"Iter: { self.n_iter} (ST)\t{self.err_fcn.__name__}:"
+                    f" {err_temp:.4e}"
+                )
 
                 if post_half_fcn is not None:
                     post_half_fcn(self.C_, self.ST_, D, D_calc)
@@ -549,8 +551,10 @@ class McrAR:
             if (self.tol_err_change is not None) & (len(self.err) > 2):
                 err_differ = _np.abs(self.err[-1] - self.err[-3])
                 if err_differ < _np.abs(self.tol_err_change):
-                    _logger.info('Change in err below tol_err_change '
-                                 '({:.4e}). Exiting.'.format(err_differ))
+                    _logger.info(
+                        f"Change in err below tol_err_change ({err_differ:.4e})."
+                        " Exiting."
+                    )
                     self.exit_tol_err_change = True
                     break
 
@@ -559,9 +563,10 @@ class McrAR:
         This performs the same purpose as the fit method, but returns the C_ matrix.
         Really, it's just to enable sklearn-expectant APIs compatible with pyMCR.
 
-        It is recommended to use the fit method and retrieve your results from C_ and ST_
+        It is recommended to use the fit method and retrieve your results
+        from C_ and ST_.
 
-        See documentation for the fit method
+        See documentation for the fit method.
 
         Returns
         --------
