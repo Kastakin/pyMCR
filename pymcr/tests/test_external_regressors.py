@@ -9,7 +9,7 @@ from numpy.testing import assert_equal, assert_array_equal, assert_allclose
 
 try:
     from sklearn.linear_model import LinearRegression, Ridge
-except:
+except ModuleNotFoundError:
     flag_sklearn = False
 else:
     flag_sklearn = True
