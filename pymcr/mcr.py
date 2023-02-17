@@ -8,6 +8,7 @@ import logging as _logging
 from pymcr.regressors import OLS, NNLS
 from pymcr.constraints import ConstraintNonneg
 from pymcr.metrics import mse
+from pymcr.components import ComponentsEstimator
 
 # create logger for mcr.py and set default level
 _logger = _logging.getLogger(__name__)
@@ -365,8 +366,15 @@ class McrAR:
                 " both provided"
             )
         else:
-            self.C_ = _np.asanyarray(C) if C is not None else C
-            self.ST_ = _np.asanyarray(ST) if ST is not None else ST
+            if isinstance(C, ComponentsEstimator):
+                self.C_ = C.transform(D)
+            else:
+                self.C_ = _np.asanyarray(C) if C is not None else C
+                
+            if isinstance(ST, ComponentsEstimator):
+                self.ST_ = ST.transform(D)
+            else:
+                self.ST_ = _np.asanyarray(ST) if ST is not None else ST
 
         self.n_increase = 0
         self.n_above_min = 0
